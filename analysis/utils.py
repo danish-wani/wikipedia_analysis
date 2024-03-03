@@ -5,7 +5,7 @@ from collections import Counter
 WIKI_BASE_URL = "https://en.wikipedia.org/w/api.php"
 
 
-class AnalysisUtil:
+class WikiAnalysisUtil:
     """
         Utility class for handling the business logic of Wiki Analysis
     """
