@@ -1,19 +1,21 @@
 import re
 import requests
+import traceback
 from collections import Counter
 
+
 from .models import SearchResult
+from .const import WIKI_BASE_URL, WIKI_TOPIC_SEARCH_URL, COMMON_WORDS
+from wikipedia_analysis.loggers import logging
 
 
-WIKI_BASE_URL = "https://en.wikipedia.org/w/api.php"
+logger = logging.getLogger("wiki_analysis")
 
 
 class WikiAnalysisUtil:
     """
         Utility class for handling the business logic of Wiki Analysis
     """
-    WIKI_TOPIC_SEARCH_URL = f"{WIKI_BASE_URL}?action=query&prop=extracts&format=json&exintro="
-    COMMON_WORDS = ['the', 'is', 'in', 'at', 'which', 'on', 'a', 'this']
 
     def __init__(self, topic: str, top_word_count: int = 10, skip_common_words: bool = False,
                  skip_numbers: bool = False) -> None:
@@ -38,6 +40,7 @@ class WikiAnalysisUtil:
         """
         if topic and isinstance(topic, str):
             return topic.strip().lower()
+        logger.error(f"Topic is invalid. topic:: {self.topic}")
         raise ValueError("Topic is invalid.")
 
     def _check_to_skip(self, word: str) -> bool:
@@ -99,7 +102,8 @@ class WikiAnalysisUtil:
             text = list(pages.values())[0]['extract']
             # Remove the HTML tags from the text
             text = self.remove_html_tags(text)
-        except IndexError:
+        except (IndexError, KeyError):
+            logger.error(f"No data found. page values:: {pages.values()}")
             raise ValueError("No data found")
         return text
 
@@ -108,12 +112,16 @@ class WikiAnalysisUtil:
             Method to fetch the text of a Wikipedia article
         :return:
         """
-        url = f"{self.WIKI_TOPIC_SEARCH_URL}&titles={self.topic}"
+        url = f"{WIKI_TOPIC_SEARCH_URL}&titles={self.topic}"
         response = requests.get(url)
         # Raise error if the response status is not in 2xx
         response.raise_for_status()
         data = response.json()
-        pages = data['query']['pages']
+        try:
+            pages = data['query']['pages']
+        except KeyError:
+            logger.error(f"No data found. data:: {data}")
+            raise ValueError("No data found")
         return pages
 
     def _save_result(self, word_frequency_json: dict) -> None:
@@ -126,8 +134,14 @@ class WikiAnalysisUtil:
                     ]
         :return: None
         """
-        search_result = SearchResult(topic=self.topic, word_frequency=word_frequency_json)
-        search_result.save()
+        try:
+            search_result = SearchResult(topic=self.topic, word_frequency=word_frequency_json)
+            search_result.save()
+        except Exception as ex:
+            logger.error(
+                f"Exception raised while saving the data in SearchResult. topic:: {self.topic} "
+                f"word_frequency_json:: {word_frequency_json}  exception:: {ex}")
+            traceback.print_exc()
 
     def run_analysis(self) -> dict:
         """
@@ -138,7 +152,10 @@ class WikiAnalysisUtil:
         # Extract the text of the first page
         text = self._extract_text(pages)
         word_freq = self.word_frequency_analysis(text)
-        return dict(topic=self.topic, top_words=word_freq)
+        if not word_freq:
+            logger.error(f"No Data found, topic:: {self.topic}  word_freq:: {word_freq}")
+            raise ValueError("No Data found")
+        return dict(topic=self.topic, word_frequency=word_freq)
 
     def process(self) -> dict:
         """
@@ -146,6 +163,6 @@ class WikiAnalysisUtil:
         :return: Json containing the topic and the `top_word_count` word to count data
         """
         return_data = self.run_analysis()
-        self._save_result(return_data.get("top_words"))
+        self._save_result(return_data.get("word_frequency"))
         return return_data
 
