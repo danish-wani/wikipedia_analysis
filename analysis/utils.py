@@ -13,7 +13,7 @@ class WikiAnalysisUtil:
         Utility class for handling the business logic of Wiki Analysis
     """
     WIKI_TOPIC_SEARCH_URL = f"{WIKI_BASE_URL}?action=query&prop=extracts&format=json&exintro="
-    COMMON_WORDS = ['the', 'is', 'in', 'at', 'which', 'on']
+    COMMON_WORDS = ['the', 'is', 'in', 'at', 'which', 'on', 'a', 'this']
 
     def __init__(self, topic: str, top_word_count: int = 10, skip_common_words: bool = False,
                  skip_numbers: bool = False) -> None:
@@ -48,8 +48,8 @@ class WikiAnalysisUtil:
         """
         good_to_go = True
         if self.skip_common_words:
-            if word not in self.COMMON_WORDS:
-                good_to_go = True
+            if word in self.COMMON_WORDS:
+                good_to_go = False
 
         if self.skip_numbers:
             good_to_go = not word.isnumeric()
@@ -126,7 +126,6 @@ class WikiAnalysisUtil:
                     ]
         :return: None
         """
-        print(f"____save___ {word_frequency_json}")
         search_result = SearchResult(topic=self.topic, word_frequency=word_frequency_json)
         search_result.save()
 

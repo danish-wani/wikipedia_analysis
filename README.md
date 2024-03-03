@@ -1,0 +1,1 @@
+## Django-based API that interacts with Wikipedia to perform specific text analysis tasks. The API consists of two primary endpoints designed to analyze and store the frequency of words in Wikipedia articles based on user queries.
