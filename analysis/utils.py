@@ -40,7 +40,7 @@ class WikiAnalysisUtil:
         """
         if topic and isinstance(topic, str):
             return topic.strip().lower()
-        logger.error(f"Topic is invalid. topic:: {self.topic}")
+        logger.error(f"Topic is invalid. topic:: {topic}")
         raise ValueError("Topic is invalid.")
 
     def _check_to_skip(self, word: str) -> bool:
@@ -51,7 +51,7 @@ class WikiAnalysisUtil:
         """
         good_to_go = True
         if self.skip_common_words:
-            if word in self.COMMON_WORDS:
+            if word in COMMON_WORDS:
                 good_to_go = False
 
         if self.skip_numbers:

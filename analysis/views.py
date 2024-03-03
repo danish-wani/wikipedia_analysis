@@ -78,7 +78,8 @@ class WikiHistory(View):
         # Default values for pagination parameters
         page = request.GET.get('page', 1)
         page_size = request.GET.get('page_size', 10)
-
+        if isinstance(page_size, str) and not page_size.isnumeric():
+            return JsonResponse({'error': "Invalid page size"}, status=400)
         # Fetch all search results ordered by creation time
         search_results = SearchResult.objects.all().order_by('-created_at')
 
