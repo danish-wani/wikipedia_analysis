@@ -31,7 +31,7 @@ class WikiAnalysis(View):
         top_word_count = int(request.GET.get('n', 10))
         try:
             util_obj = WikiAnalysisUtil(topic=topic, top_word_count=top_word_count)
-            word_freq_data = util_obj.run_analysis()
+            word_freq_data = util_obj.process()
         except Exception as ex:
             return JsonResponse({"error": f"{ex}"}, status=400)
         return JsonResponse(word_freq_data, status=200)

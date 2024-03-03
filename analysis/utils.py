@@ -2,6 +2,9 @@ import re
 import requests
 from collections import Counter
 
+from .models import SearchResult
+
+
 WIKI_BASE_URL = "https://en.wikipedia.org/w/api.php"
 
 
@@ -113,6 +116,20 @@ class WikiAnalysisUtil:
         pages = data['query']['pages']
         return pages
 
+    def _save_result(self, word_frequency_json: dict) -> None:
+        """
+            Saves the search result of the topic in SearchResult table
+        :param word_frequency_json: [
+                        {
+                            "word": frequency
+                        }
+                    ]
+        :return: None
+        """
+        print(f"____save___ {word_frequency_json}")
+        search_result = SearchResult(topic=self.topic, word_frequency=word_frequency_json)
+        search_result.save()
+
     def run_analysis(self) -> dict:
         """
             Processes the topic and returns Json containing the topic and the `top_word_count` word to count data
@@ -122,6 +139,14 @@ class WikiAnalysisUtil:
         # Extract the text of the first page
         text = self._extract_text(pages)
         word_freq = self.word_frequency_analysis(text)
-
         return dict(topic=self.topic, top_words=word_freq)
+
+    def process(self) -> dict:
+        """
+            Runs the analysis and saves the result
+        :return: Json containing the topic and the `top_word_count` word to count data
+        """
+        return_data = self.run_analysis()
+        self._save_result(return_data.get("top_words"))
+        return return_data
 
